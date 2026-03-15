@@ -9,9 +9,35 @@
 </head>
 <body>
     <div class="container mt-4">
-        <div class="row">
+        <div class="row mb-3">
             <div class="col-12">
                 <h2>Sales Returns</h2>
+            </div>
+        </div>
+        <div class="row mb-3">
+            <div class="col-md-2">
+                <label class="form-label">From Date</label>
+                <input type="date" class="form-control form-control-sm" id="start_date">
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">To Date</label>
+                <input type="date" class="form-control form-control-sm" id="end_date">
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Customer</label>
+                <input type="text" class="form-control form-control-sm" id="customer" placeholder="Customer name">
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">Invoice No.</label>
+                <input type="text" class="form-control form-control-sm" id="invoice_no" placeholder="Invoice No.">
+            </div>
+            <div class="col-md-2 d-flex align-items-end">
+                <button type="button" class="btn btn-sm btn-primary me-1" id="filter-btn">Filter</button>
+                <button type="button" class="btn btn-sm btn-secondary" id="reset-btn">Reset</button>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-12">
                 <table id="sales-returns-table" class="table table-striped">
                     <thead>
                         <tr>
@@ -188,7 +214,16 @@
             var table = $('#sales-returns-table').DataTable({
                 processing: true,
                 serverSide: true,
-                ajax: '{{ route("sales-returns.index") }}',
+                searching: false,
+                ajax: {
+                    url: '{{ route("sales-returns.index") }}',
+                    data: function(d) {
+                        d.start_date = $('#start_date').val();
+                        d.end_date = $('#end_date').val();
+                        d.customer = $('#customer').val();
+                        d.invoice_no = $('#invoice_no').val();
+                    }
+                },
                 columns: [
                     { data: 'id', name: 'id' },
                     { data: 'invoice_id', name: 'invoice_id' },
@@ -289,7 +324,7 @@
                             itemsHtml += '<td>' + item.quantity + '</td>';
                             itemsHtml += '<td>' + item.unit_price + '</td>';
                             itemsHtml += '<td>' + item.discount + '</td>';
-                            itemsHtml += '<td>' + item.tax_rate + '</td>';
+                            itemsHtml += '<td>' + item.tax_rate + '%</td>';
                             itemsHtml += '<td>' + item.total + '</td>';
                             itemsHtml += '</tr>';
                         });
@@ -321,6 +356,18 @@
                         alert('Error updating status: ' + xhr.responseJSON.message);
                     }
                 });
+            });
+
+            $('#filter-btn').click(function() {
+                table.ajax.reload();
+            });
+
+            $('#reset-btn').click(function() {
+                $('#start_date').val('');
+                $('#end_date').val('');
+                $('#customer').val('');
+                $('#invoice_no').val('');
+                table.ajax.reload();
             });
         });
     </script>

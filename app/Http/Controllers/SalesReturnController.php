@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\SalesReturn;
+use App\Models\StockTransaction;
 use Illuminate\Http\Request;
 
 class SalesReturnController extends Controller
@@ -18,6 +19,22 @@ class SalesReturnController extends Controller
                 'total_amount',
                 'status',
             ])->orderBy('id', 'desc');
+
+            if ($request->has('start_date') && !empty($request->start_date)) {
+                $query->whereDate('return_date', '>=', $request->start_date);
+            }
+
+            if ($request->has('end_date') && !empty($request->end_date)) {
+                $query->whereDate('return_date', '<=', $request->end_date);
+            }
+
+            if ($request->has('customer') && !empty($request->customer)) {
+                $query->where('customer_name', 'like', '%' . $request->customer . '%');
+            }
+
+            if ($request->has('invoice_no') && !empty($request->invoice_no)) {
+                $query->where('invoice_id', 'like', '%' . $request->invoice_no . '%');
+            }
 
             $recordsTotal = $query->count();
 
@@ -108,7 +125,26 @@ class SalesReturnController extends Controller
         ]);
 
         $salesReturn = SalesReturn::findOrFail($id);
-        $salesReturn->update(['status' => $request->status]);
+        $previousStatus = $salesReturn->status;
+        $newStatus = $request->status;
+
+        $salesReturn->update(['status' => $newStatus]);
+
+        if ($newStatus === 'approved' && $previousStatus !== 'approved') {
+            foreach ($salesReturn->salesReturnItems as $returnItem) {
+                $item = $returnItem->item;
+                $item->stock += $returnItem->quantity;
+                $item->save();
+
+                StockTransaction::create([
+                    'item_id' => $item->id,
+                    'type' => 'return',
+                    'reference_id' => $salesReturn->id,
+                    'quantity' => $returnItem->quantity,
+                    'stock_effect' => $returnItem->quantity,
+                ]);
+            }
+        }
 
         return response()->json([
             'success' => true,
