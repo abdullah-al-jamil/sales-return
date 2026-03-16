@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Invoice;
 use App\Models\SalesReturn;
 use App\Models\SalesReturnItem;
+use App\Models\StockTransaction;
 use Illuminate\Http\Request;
 
 class InvoiceController extends Controller
@@ -136,6 +137,7 @@ class InvoiceController extends Controller
         $request->validate([
             'return_date' => 'required',
             'reason' => 'required',
+            'refund_method' => 'required',
             'items' => 'required|array|min:1',
             'items.*.selected' => 'required',
             'items.*.quantity' => 'required|integer|min:1',
@@ -192,13 +194,26 @@ class InvoiceController extends Controller
             'vat_amount' => $vatAmount,
             'total_amount' => $totalAmount,
             'reason' => $request->reason,
-            'status' => 'pending',
+            'status' => 'approved',
+            'refund_method' => $request->refund_method,
         ]);
 
         foreach ($returnItems as $item) {
             SalesReturnItem::create(array_merge($item, [
                 'sales_return_id' => $salesReturn->id,
             ]));
+
+            $itemModel = \App\Models\Item::find($item['item_id']);
+            $itemModel->stock += $item['quantity'];
+            $itemModel->save();
+
+            StockTransaction::create([
+                'item_id' => $item['item_id'],
+                'type' => 'return',
+                'reference_id' => $salesReturn->id,
+                'quantity' => $item['quantity'],
+                'stock_effect' => $item['quantity'],
+            ]);
         }
 
         $invoice->update(['status' => 'returned']);

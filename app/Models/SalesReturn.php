@@ -21,6 +21,7 @@ class SalesReturn extends Model
         'total_amount',
         'reason',
         'status',
+        'refund_method',
     ];
 
     protected $casts = [

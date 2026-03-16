@@ -3,7 +3,6 @@
 namespace App\Http\Controllers;
 
 use App\Models\SalesReturn;
-use App\Models\StockTransaction;
 use Illuminate\Http\Request;
 
 class SalesReturnController extends Controller
@@ -18,6 +17,7 @@ class SalesReturnController extends Controller
                 'return_date',
                 'total_amount',
                 'status',
+                'refund_method',
             ])->orderBy('id', 'desc');
 
             if ($request->has('start_date') && !empty($request->start_date)) {
@@ -57,7 +57,7 @@ class SalesReturnController extends Controller
             if ($request->has('order') && count($request->order) > 0) {
                 $columnIndex = $request->order[0]['column'];
                 $columnDir = $request->order[0]['dir'];
-                $columns = ['id', 'invoice_id', 'customer_name', 'return_date', 'total_amount', 'status'];
+                $columns = ['id', 'invoice_id', 'customer_name', 'return_date', 'total_amount', 'status', 'refund_method'];
                 if (isset($columns[$columnIndex])) {
                     $query->orderBy($columns[$columnIndex], $columnDir);
                 }
@@ -77,6 +77,7 @@ class SalesReturnController extends Controller
                         'return_date' => $return->return_date->format('Y-m-d H:i'),
                         'total_amount' => number_format($return->total_amount, 2),
                         'status' => $return->status,
+                        'refund_method' => $return->refund_method,
                     ];
                 })
             ]);
@@ -101,6 +102,7 @@ class SalesReturnController extends Controller
                 'vat_amount' => number_format($salesReturn->vat_amount, 2),
                 'total_amount' => number_format($salesReturn->total_amount, 2),
                 'status' => $salesReturn->status,
+                'refund_method' => $salesReturn->refund_method,
             ],
             'items' => $salesReturn->salesReturnItems->map(function ($item) {
                 return [
@@ -125,26 +127,7 @@ class SalesReturnController extends Controller
         ]);
 
         $salesReturn = SalesReturn::findOrFail($id);
-        $previousStatus = $salesReturn->status;
-        $newStatus = $request->status;
-
-        $salesReturn->update(['status' => $newStatus]);
-
-        if ($newStatus === 'approved' && $previousStatus !== 'approved') {
-            foreach ($salesReturn->salesReturnItems as $returnItem) {
-                $item = $returnItem->item;
-                $item->stock += $returnItem->quantity;
-                $item->save();
-
-                StockTransaction::create([
-                    'item_id' => $item->id,
-                    'type' => 'return',
-                    'reference_id' => $salesReturn->id,
-                    'quantity' => $returnItem->quantity,
-                    'stock_effect' => $returnItem->quantity,
-                ]);
-            }
-        }
+        $salesReturn->update(['status' => $request->status]);
 
         return response()->json([
             'success' => true,

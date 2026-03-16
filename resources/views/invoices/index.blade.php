@@ -133,6 +133,15 @@
                         <label for="returnReason" class="form-label">Reason</label>
                         <textarea class="form-control" id="returnReason" rows="2" placeholder="Enter return reason..."></textarea>
                     </div>
+                    <div class="mb-3">
+                        <label for="refundMethod" class="form-label">Refund Method</label>
+                        <select class="form-select" id="refundMethod" required>
+                            <option value="">Select Refund Method</option>
+                            <option value="Cash">Cash</option>
+                            <option value="Bank">Bank</option>
+                            <option value="Credit Note">Credit Note</option>
+                        </select>
+                    </div>
                     <hr>
                     <h6>Select Items to Return</h6>
                     <table class="table table-bordered table-sm" id="return-items-table">
@@ -342,6 +351,7 @@
             $('#submitReturn').click(function() {
                 var returnDate = $('#returnDate').val();
                 var reason = $('#returnReason').val();
+                var refundMethod = $('#refundMethod').val();
                 
                 if (!returnDate) {
                     alert('Please select return date');
@@ -349,6 +359,10 @@
                 }
                 if (!reason) {
                     alert('Please enter return reason');
+                    return;
+                }
+                if (!refundMethod) {
+                    alert('Please select refund method');
                     return;
                 }
                 
@@ -383,6 +397,7 @@
                     data: {
                         return_date: returnDate,
                         reason: reason,
+                        refund_method: refundMethod,
                         items: selectedItems
                     },
                     success: function(response) {

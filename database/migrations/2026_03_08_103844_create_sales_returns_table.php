@@ -22,6 +22,7 @@ return new class extends Migration
             $table->decimal('total_amount', 10, 2);
             $table->string('reason');
             $table->string('status')->default('pending');
+            $table->string('refund_method');
             $table->timestamps();
         });
     }

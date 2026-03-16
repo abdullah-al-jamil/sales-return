@@ -20,6 +20,7 @@ class SalesReturnSeeder extends Seeder
                 'total_amount' => 32.99,
                 'reason' => 'Wrong item received',
                 'status' => 'approved',
+                'refund_method' => 'Cash',
             ],
             [
                 'invoice_id' => 2,
@@ -31,6 +32,7 @@ class SalesReturnSeeder extends Seeder
                 'total_amount' => 98.99,
                 'reason' => 'Product defective',
                 'status' => 'pending',
+                'refund_method' => 'Bank',
             ],
         ];
 

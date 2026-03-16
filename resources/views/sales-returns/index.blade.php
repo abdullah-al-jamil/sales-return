@@ -47,6 +47,7 @@
                             <th>Return Date</th>
                             <th>Total Amount</th>
                             <th>Status</th>
+                            <th>Refund Method</th>
                             <th>Action</th>
                         </tr>
                     </thead>
@@ -87,13 +88,7 @@
                     </div>
                     <div class="row mb-3">
                         <div class="col-md-6">
-                            <strong>Status:</strong>
-                            <select class="form-select form-select-sm d-inline-block w-auto ms-2" id="status-select">
-                                <option value="pending">Pending</option>
-                                <option value="approved">Approved</option>
-                                <option value="rejected">Rejected</option>
-                            </select>
-                            <button type="button" class="btn btn-sm btn-primary ms-2" id="update-status-btn">Update</button>
+                            <strong>Status:</strong> <span id="modal-status-display"></span>
                         </div>
                     </div>
                     <hr>
@@ -242,6 +237,7 @@
                             return '<span class="badge bg-' + (statusClass[data] || 'secondary') + '">' + data.charAt(0).toUpperCase() + data.slice(1) + '</span>';
                         }
                     },
+                    { data: 'refund_method', name: 'refund_method' },
                     {
                         data: 'id',
                         name: 'action',
@@ -272,7 +268,7 @@
                         $('#modal-vat-amount').text(response.sales_return.vat_amount);
                         $('#modal-total-amount').text(response.sales_return.total_amount);
                         
-                        $('#status-select').val(response.sales_return.status);
+                        $('#modal-status-display').text(response.sales_return.status.charAt(0).toUpperCase() + response.sales_return.status.slice(1));
                         
                         var itemsHtml = '';
                         response.items.forEach(function(item) {
@@ -332,28 +328,6 @@
                         
                         var modal = new bootstrap.Modal(document.getElementById('invoiceModal'));
                         modal.show();
-                    }
-                });
-            });
-
-            $('#update-status-btn').click(function() {
-                var newStatus = $('#status-select').val();
-                
-                $.ajax({
-                    url: '/sales-returns/' + currentReturnId + '/status',
-                    method: 'PUT',
-                    headers: {
-                        'X-CSRF-TOKEN': '{{ csrf_token() }}'
-                    },
-                    data: {
-                        status: newStatus
-                    },
-                    success: function(response) {
-                        alert(response.message);
-                        table.ajax.reload();
-                    },
-                    error: function(xhr) {
-                        alert('Error updating status: ' + xhr.responseJSON.message);
                     }
                 });
             });
