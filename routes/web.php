@@ -3,6 +3,7 @@
 use App\Http\Controllers\InvoiceController;
 use App\Http\Controllers\ItemController;
 use App\Http\Controllers\SalesReturnController;
+use App\Http\Controllers\StockController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -19,3 +20,5 @@ Route::post('/invoices/{id}/return', [InvoiceController::class, 'storeReturn'])-
 Route::get('/sales-returns', [SalesReturnController::class, 'index'])->name('sales-returns.index');
 Route::get('/sales-returns/{id}', [SalesReturnController::class, 'show'])->name('sales-returns.show');
 Route::put('/sales-returns/{id}/status', [SalesReturnController::class, 'updateStatus'])->name('sales-returns.updateStatus');
+
+Route::get('/stocks', [StockController::class, 'index'])->name('stocks.index');

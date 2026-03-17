@@ -13,6 +13,7 @@ class DatabaseSeeder extends Seeder
     {
         $this->call([
             ItemSeeder::class,
+            StockSeeder::class,
             InvoiceSeeder::class,
             InvoiceItemSeeder::class,
             StockTransactionSeeder::class,

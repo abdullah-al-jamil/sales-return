@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Invoice;
 use App\Models\SalesReturn;
 use App\Models\SalesReturnItem;
+use App\Models\Stock;
 use App\Models\StockTransaction;
 use Illuminate\Http\Request;
 
@@ -133,6 +134,7 @@ class InvoiceController extends Controller
     public function storeReturn(Request $request, $id)
     {
         $invoice = Invoice::findOrFail($id);
+        $invoiceItemIds = $invoice->invoiceItems->pluck('id');
 
         $request->validate([
             'return_date' => 'required',
@@ -140,7 +142,36 @@ class InvoiceController extends Controller
             'refund_method' => 'required',
             'items' => 'required|array|min:1',
             'items.*.selected' => 'required',
-            'items.*.quantity' => 'required|integer|min:1',
+            'items.*.quantity' => [
+                'required',
+                'integer',
+                'min:1',
+                function ($attribute, $value, $fail) use ($invoiceItemIds) {
+                    $index = explode('.', $attribute)[1];
+                    $items = request()->items;
+                    $invoiceItemId = $items[$index]['invoice_item_id'] ?? null;
+
+                    if (!$invoiceItemId || !isset($items[$index]['selected']) || !$items[$index]['selected']) {
+                        return;
+                    }
+
+                    if (!in_array($invoiceItemId, $invoiceItemIds->toArray())) {
+                        return $fail('Invalid invoice item.');
+                    }
+
+                    $invoiceItem = \App\Models\InvoiceItem::find($invoiceItemId);
+                    $soldQuantity = $invoiceItem->quantity;
+
+                    $alreadyReturned = \App\Models\SalesReturnItem::where('invoice_item_id', $invoiceItemId)
+                        ->sum('quantity');
+
+                    $maxReturnable = $soldQuantity - $alreadyReturned;
+
+                    if ((int) $value > $maxReturnable) {
+                        $fail("Return quantity cannot exceed sold quantity. Maximum returnable: {$maxReturnable}");
+                    }
+                },
+            ],
         ]);
 
         $items = $request->items;
@@ -214,6 +245,13 @@ class InvoiceController extends Controller
                 'quantity' => $item['quantity'],
                 'stock_effect' => $item['quantity'],
             ]);
+
+            $stock = Stock::where('item_id', $item['item_id'])->first();
+            if ($stock) {
+                $stock->stock_in += $item['quantity'];
+                $stock->available_stock += $item['quantity'];
+                $stock->save();
+            }
         }
 
         $invoice->update(['status' => 'returned']);
